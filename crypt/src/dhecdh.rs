@@ -2,6 +2,7 @@ use rand::random_range;
 
 use crate::{elliptic_curve::{EllipticCurve, Point}, kakem::KeyAgreement, operations::modpow};
 
+// TODO: remove (unused anymore, can be derived from groups)
 
 pub struct EcdhKa {
     curve: EllipticCurve,

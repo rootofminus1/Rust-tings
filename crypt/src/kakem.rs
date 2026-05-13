@@ -1,3 +1,7 @@
+use rand::random_range;
+
+use crate::cyclic_group::CyclicGroup;
+
 
 
 
@@ -68,5 +72,39 @@ impl<KA: KeyAgreement> Kem for KemFromKa<KA> {
 
     fn decapsulate(&self, sk: &Self::PrivateKey, ct: &Self::Ciphertext) -> Self::SharedSecret {
         self.ka.agree(sk, ct)
+    }
+}
+
+
+
+pub struct GroupKA<G: CyclicGroup> {
+    group: G
+}
+
+impl <G: CyclicGroup> GroupKA<G> {
+    pub fn new(group: G) -> Self {
+        Self { group }
+    }
+}
+
+use num_traits::{One, FromPrimitive};
+
+impl <G: CyclicGroup> KeyAgreement for GroupKA<G> {
+    type PrivateKey = G::Scalar;
+
+    type PublicKey = G::Element;
+
+    type SharedSecret = G::Element;
+
+    fn generate_secret_key(&self) -> Self::PrivateKey {
+        random_range(G::Scalar::from_u8(2).unwrap()..self.group.generator_order() - G::Scalar::one())
+    }
+
+    fn derive_public_key(&self, sk: &Self::PrivateKey) -> Self::PublicKey {
+        self.group.scalar_mul(*sk, self.group.generator())
+    }
+
+    fn agree(&self, sk: &Self::PrivateKey, their_pk: &Self::PublicKey) -> Self::SharedSecret {
+        self.group.scalar_mul(*sk, *their_pk)
     }
 }

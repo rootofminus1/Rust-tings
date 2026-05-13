@@ -1,9 +1,11 @@
-use crate::{dhecdh::{DhKa, EcdhKa}, elliptic_curve::{EllipticCurve, Point}, kakem::{Kem, KemFromKa, KeyAgreement}};
+use crate::{elliptic_curve::{EllipticCurve, Point}, groups::{EcGroup, MultiplicativeZp}, kakem::{GroupKA, Kem, KemFromKa, KeyAgreement}};
 
 mod operations;
 mod elliptic_curve;
 mod kakem;
 mod dhecdh;
+mod cyclic_group;
+mod groups;
 
 
 pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
@@ -20,7 +22,8 @@ fn main() -> Result<(), Error> {
 }
 
 fn dhka() {
-    let dhka = DhKa::new(23, 5);
+    let group = MultiplicativeZp { p: 23, g: 5, g_order: 22 };
+    let dhka = GroupKA::new(group);
 
     let (ask, apk) = dhka.generate_keypair();
     let (bsk, bpk) = dhka.generate_keypair();
@@ -34,8 +37,8 @@ fn dhka() {
 }
 
 fn dhkem() {
-    // let dhkem = DhKem::new(23, 5);
-    let dhkem = KemFromKa::new(DhKa::new(23, 5));
+    let group = MultiplicativeZp { p: 23, g: 5, g_order: 22 };
+    let dhkem = KemFromKa::new(GroupKA::new(group));
 
     // bob's sk/pk
     let (sk, pk) = dhkem.generate_keypair();
@@ -59,12 +62,13 @@ fn ecdhka() {
     // P = (0, 1)
     // ord(P) = 19
 
-    let n = 13;
-    let e = EllipticCurve::new(-3, 1, n);
-    let point = Point::Affine(0, 1);
-    let order = 19;
+    let ec_group = EcGroup {
+        curve: EllipticCurve::new(-3, 1, 13),  // y^2 = x^3 - 3x + 1 over F_13
+        generator: Point::Affine(0, 1),
+        generator_order: 19,
+    };
+    let ecdhka = GroupKA::new(ec_group);
 
-    let ecdhka = EcdhKa::new(e,  point, order);
 
     let (ask, apk) = ecdhka.generate_keypair();
     let (bsk, bpk) = ecdhka.generate_keypair();
@@ -78,12 +82,13 @@ fn ecdhka() {
 }
 
 fn ecdhkem() {
-    let n = 13;
-    let curve = EllipticCurve::new(-3, 1, n);
-    let p = Point::Affine(0, 1);
-    let order = 19;
-
-    let ecdh_kem  = KemFromKa::new(EcdhKa::new(curve,  p, order));
+    let ec_group = EcGroup {
+        curve: EllipticCurve::new(-3, 1, 13),  // y^2 = x^3 - 3x + 1 over F_13
+        generator: Point::Affine(0, 1),
+        generator_order: 19,
+    };
+    // let ecdhka = ;
+    let ecdh_kem = KemFromKa::new(GroupKA::new(ec_group));
 
     // bob's sk/pk
     let (sk, pk) = ecdh_kem.generate_keypair();

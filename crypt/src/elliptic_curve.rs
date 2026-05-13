@@ -9,6 +9,7 @@ pub enum Point {
     Affine(i32, i32),
 }
 
+#[derive(Debug, Clone)]
 pub struct EllipticCurve {
     pub a: i32,
     pub b: i32,
